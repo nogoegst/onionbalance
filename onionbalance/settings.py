@@ -272,12 +272,15 @@ def generate_config():
     service_virtual_port = service_virtual_port or args.service_virtual_port
 
     service_target = None
-    default_service_target = u'127.0.0.1:{}'.format(service_virtual_port)
     if interactive:
+        # In interactive mode, change default target to match the specified
+        # virtual port
+        default_service_target = u'127.0.0.1:{}'.format(service_virtual_port)
         service_target = input("Specify the service target IP and port (where "
                                "your service is listening) [{}]: ".format(
                                    default_service_target))
-    service_target = service_target or default_service_target
+        service_target = service_target or default_service_target
+    service_target = service_target or args.service_target
     torrc_port_line = u'HiddenServicePort {} {}'.format(service_virtual_port,
                                                         service_target)
 
