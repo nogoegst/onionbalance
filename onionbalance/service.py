@@ -5,6 +5,7 @@ import base64
 
 import Crypto.PublicKey.RSA
 import stem
+from keycity import Keycity
 
 from onionbalance import descriptor
 from onionbalance import util
@@ -34,25 +35,20 @@ class Service(object):
     be load-balanced.
     """
 
-    def __init__(self, controller, service_key=None, instances=None):
+    def __init__(self, controller, onion_address=None, instances=None):
         """
         Initialise a HiddenService object.
         """
         self.controller = controller
-
+        self.onion_address = onion_address
         # Service key must be a valid PyCrypto RSA key object
-        if isinstance(service_key, Crypto.PublicKey.RSA._RSAobj):
-            self.service_key = service_key
-        else:
+        if not isinstance(Keycity().pubkey_please(self.onion_address), Crypto.PublicKey.RSA._RSAobj):
             raise ValueError("Service key is not a valid RSA object.")
 
         # List of instances for this onion service
         if not instances:
             instances = []
         self.instances = instances
-
-        # Calculate the onion address for this service
-        self.onion_address = util.calc_onion_address(self.service_key)
 
         # Timestamp when this descriptor was last attempted
         self.uploaded = None
@@ -143,7 +139,7 @@ class Service(object):
         for replica in range(0, config.REPLICAS):
             try:
                 signed_descriptor = descriptor.generate_service_descriptor(
-                    self.service_key,
+                    self.onion_address,
                     introduction_point_list=introduction_points,
                     replica=replica,
                     deviation=deviation

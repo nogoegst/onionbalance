@@ -40,13 +40,6 @@ def parse_config_file(config_file):
                      "keys and config files.", config_path)
         sys.exit(1)
 
-    # Rewrite relative paths in the config to be relative to the config
-    # file directory
-    config_directory = os.path.dirname(config_path)
-    for service in config_data.get('services'):
-        if not os.path.isabs(service.get('key')):
-            service['key'] = os.path.join(config_directory, service['key'])
-
     return config_data
 
 
@@ -57,31 +50,9 @@ def initialize_services(controller, services_config):
 
     # Load the keys and config for each onion service
     for service in services_config:
-        try:
-            service_key = util.key_decrypt_prompt(service.get("key"))
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                logger.error("Private key file %s could not be found. "
-                             "Relative paths in the config file are loaded "
-                             "relative to the config file directory.",
-                             service.get("key"))
-                sys.exit(1)
-            else:
-                raise
-        # Key file was read but a valid private key was not found.
-        if not service_key:
-            logger.error("Private key %s could not be loaded. It is a not "
-                         "valid 1024 bit PEM encoded RSA private key",
-                         service.get("key"))
-            sys.exit(1)
-        else:
-            # Successfully imported the private key
-            onion_address = util.calc_onion_address(service_key)
-            logger.debug("Loaded private key for service %s.onion.",
-                         onion_address)
-
+        onion_address = service.get("address")
         # Load all instances for the current onion service
-        instance_config = service.get("instances", [])
+        instance_config = service.get("backends", [])
         if not instance_config:
             logger.error("Could not load and instances for service "
                          "%s.onion.", onion_address)
@@ -101,7 +72,7 @@ def initialize_services(controller, services_config):
         # Store service configuration in config.services global
         config.services.append(onionbalance.service.Service(
             controller=controller,
-            service_key=service_key,
+            onion_address=onion_address,
             instances=instances
         ))
 

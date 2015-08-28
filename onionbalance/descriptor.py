@@ -7,6 +7,7 @@ import random
 
 import Crypto.Util.number
 import stem
+from keycity import Keycity
 
 from onionbalance import util
 from onionbalance import log
@@ -70,7 +71,7 @@ def choose_introduction_point_set(available_introduction_points):
     return choosen_intro_points
 
 
-def generate_service_descriptor(permanent_key, introduction_point_list=None,
+def generate_service_descriptor(onion_address, introduction_point_list=None,
                                 replica=0, timestamp=None, deviation=0):
     """
     High-level interface for generating a signed HS descriptor
@@ -80,8 +81,8 @@ def generate_service_descriptor(permanent_key, introduction_point_list=None,
         timestamp = datetime.datetime.utcnow()
     unix_timestamp = int(timestamp.strftime("%s"))
 
-    permanent_key_block = make_public_key_block(permanent_key)
-    permanent_id = util.calc_permanent_id(permanent_key)
+    permanent_key_block = make_public_key_block(Keycity().pubkey_please(onion_address))
+    permanent_id = util.calc_permanent_id(Keycity().pubkey_please(onion_address))
 
     # Calculate the current secret-id-part for this hidden service
     # Deviation allows the generation of a descriptor for a different time
@@ -93,7 +94,6 @@ def generate_service_descriptor(permanent_key, introduction_point_list=None,
     descriptor_id = util.calc_descriptor_id(permanent_id, secret_id_part)
 
     if not introduction_point_list:
-        onion_address = util.calc_onion_address(permanent_key)
         raise ValueError("No introduction points for service %s.onion." %
                          onion_address)
 
@@ -110,7 +110,7 @@ def generate_service_descriptor(permanent_key, introduction_point_list=None,
         introduction_points_part=intro_section
     )
 
-    signed_descriptor = sign_descriptor(unsigned_descriptor, permanent_key)
+    signed_descriptor = sign_descriptor(unsigned_descriptor, onion_address)
     return signed_descriptor
 
 
@@ -184,7 +184,7 @@ def make_public_key_block(key):
     return pub_with_headers
 
 
-def sign_digest(digest, private_key):
+def sign_digest(digest, onion_address):
     """
     Sign, base64 encode, wrap and add Tor signature headers
 
@@ -192,9 +192,7 @@ def sign_digest(digest, private_key):
     algorithmIdentifier section.
     """
 
-    digest = util.add_pkcs1_padding(digest)
-    (signature_long, ) = private_key.sign(digest, None)
-    signature_bytes = Crypto.Util.number.long_to_bytes(signature_long, 128)
+    signature_bytes = Keycity().sign_please(digest, onion_address)
     signature_base64 = base64.b64encode(signature_bytes).decode('utf-8')
     signature_base64 = textwrap.fill(signature_base64, 64)
 
@@ -206,7 +204,7 @@ def sign_digest(digest, private_key):
     return signature_with_headers
 
 
-def sign_descriptor(descriptor, service_key):
+def sign_descriptor(descriptor, onion_address):
     """
     Sign or resign a provided hidden service descriptor
     """
@@ -220,7 +218,7 @@ def sign_descriptor(descriptor, service_key):
         descriptor = descriptor.strip() + token_descriptor_signature
 
     descriptor_digest = hashlib.sha1(descriptor.encode('utf-8')).digest()
-    signature_with_headers = sign_digest(descriptor_digest, service_key)
+    signature_with_headers = sign_digest(descriptor_digest, onion_address)
     return descriptor + signature_with_headers
 
 

@@ -109,7 +109,7 @@ def main():
 
     # Load the keys and config for each onion service
     settings.initialize_services(controller,
-                                 config_file_options.get('services'))
+                                 config_file_options.get('frontends'))
 
     # Finished parsing all the config file.
 
