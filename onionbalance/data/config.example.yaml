@@ -5,9 +5,8 @@
 # hidden service
 
 REFRESH_INTERVAL: 600 # How often to poll for updated descriptors
-frontends:
-    - address: 5kby4742xbyaxeeu
-      backends:
-        - address: o6ff73vmigi4oxka # srv1
-        - address: rnkz23ai6qesuwqh # srv2
-          auth: dCmx3qIvArbil8A0KM4KgQ== # Hidden service authentication key
+services:
+  5kby4742xbyaxeeu:
+      o6ff73vmigi4oxka:
+          auth: dCmx3qIvArbil8A0KM4KgQ==
+      rnkz23ai6qesuwqh:

@@ -50,9 +50,9 @@ def initialize_services(controller, services_config):
 
     # Load the keys and config for each onion service
     for service in services_config:
-        onion_address = service.get("address")
+        onion_address = service
         # Load all instances for the current onion service
-        instance_config = service.get("backends", [])
+        instance_config = services_config.get(service, {})
         if not instance_config:
             logger.error("Could not load and instances for service "
                          "%s.onion.", onion_address)
@@ -62,8 +62,8 @@ def initialize_services(controller, services_config):
             for instance in instance_config:
                 instances.append(onionbalance.instance.Instance(
                     controller=controller,
-                    onion_address=instance.get("address"),
-                    authentication_cookie=instance.get("auth")
+                    onion_address=instance,
+                    authentication_cookie=instance_config.get(instance).get("auth")
                 ))
 
             logger.info("Loaded %d instances for service %s.onion.",
